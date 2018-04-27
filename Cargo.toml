@@ -1,0 +1,8 @@
+[package]
+name = "weekend-raytracer"
+version = "0.1.0"
+authors = ["Chris Westra <cwestra@gmail.com>"]
+
+[dependencies]
+
+png = "0.11.0"
