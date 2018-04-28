@@ -1,6 +1,8 @@
 extern crate png;
+extern crate weekend_raytracer;
 
-use std::ops::{Add,Sub,Mul,Div};
+use weekend_raytracer::{Vec3, Ray};
+
 use png::HasParameters;
 use std::fs::File;
 use std::env;
@@ -23,7 +25,7 @@ fn main() {
         let u = i as f64 / nx as f64;
         let v = j as f64 / ny as f64;
 
-        let r = Ray::new(origin.clone(), lower_left_corner.clone() + u * horizontal.clone() + v * vertical.clone());
+        let r = Ray::new(origin, lower_left_corner + u * horizontal + v * vertical);
         let col = color(&r);
 
         let ir = 255.99 * col.x();
@@ -47,206 +49,37 @@ fn main() {
   writer.write_image_data(&img).unwrap();
 }
 
-pub fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> bool {
-    let oc = r.origin().clone() - center;
-    let a = r.direction().dot(r.direction().clone());
-    let b = 2.0 * oc.dot(r.direction().clone());
-    let c = oc.dot(oc.clone()) - radius * radius;
+pub fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> Option<f64> {
+    let oc = r.origin() - center;
+    let a = r.direction().dot(r.direction());
+    let b = 2.0 * oc.dot(r.direction());
+    let c = oc.dot(oc) - radius * radius;
     let discriminant = b * b - 4.0 * a * c;
-    discriminant > 0.0
+    if discriminant > 0.0 {
+        let closest_t = (-b - discriminant.sqrt()) / (2.0 * a);
+        Some(closest_t)
+    } else {
+        None
+    }
 }
 
 pub fn color(r: &Ray) -> Vec3 {
-    if hit_sphere(Vec3::new([0.0, 0.0, -1.0]), 0.5, r) {
-        Vec3::new([1.0, 0.0, 0.0])
-    } else {
-        let unit_direction = r.direction().unit_vector();
-        let t = 0.5 * (unit_direction.y() + 1.0);
-        (1.0 - t) * Vec3::new([1.0, 1.0, 1.0]) + t * Vec3::new([0.5, 0.7, 1.0])
-    }
-}
+    match hit_sphere(Vec3::new([0.0, 0.0, -1.0]), 0.5, r) {
+        Some(t) => {
+            let n = (r.point_at_parameter(t) - Vec3::new([0.0, 0.0, -1.0])).unit_vector();
+            0.5 * Vec3::new([n.x() + 1.0, n.y() + 1.0, n.z() + 1.0])
+        }
 
-
-pub struct Ray {
-    a: Vec3,
-    b: Vec3,
-}
-
-impl Ray {
-    pub fn new(a: Vec3, b: Vec3) -> Ray {
-        Ray {
-            a,
-            b,
+        None => {
+            let unit_direction = r.direction().unit_vector();
+            let t = 0.5 * (unit_direction.y() + 1.0);
+            (1.0 - t) * Vec3::new([1.0, 1.0, 1.0]) + t * Vec3::new([0.5, 0.7, 1.0])
         }
     }
-
-    pub fn origin(&self) -> &Vec3 {
-        &self.a
-    }
-
-    pub fn direction(&self) -> &Vec3 {
-        &self.b
-    }
-
-    pub fn point_at_parameter(&self, t: f64) -> Vec3 {
-        self.a.clone() + self.b.clone() * t
-    }
 }
 
 
-#[derive(Debug, Clone)]
-pub struct Vec3 {
-  e: [f64; 3]
-}
 
-
-impl Vec3 {
-    pub fn x(&self) -> f64 {
-        self.e[0]
-    }
-
-    pub fn y(&self) -> f64 {
-        self.e[1]
-    }
-
-    pub fn z(&self) -> f64 {
-        self.e[2]
-    }
-
-    pub fn new(arr: [f64; 3]) -> Vec3 {
-        Vec3 {
-            e: arr
-        }
-    }
-
-    pub fn apply_per_element<F>(&self, other: Vec3, op: F) -> Vec3
-        where F: Fn(f64, f64) -> f64 {
-        Vec3::new(
-            [
-                op(self.e[0], other.e[0]),
-                op(self.e[1], other.e[1]),
-                op(self.e[2], other.e[2]),
-            ])
-    }
-
-    pub fn map<F>(&self, op: F) -> Vec3
-    where F: Fn(f64) -> f64 {
-        Vec3::new(
-            [
-                op(self.e[0]),
-                op(self.e[1]),
-                op(self.e[2]),
-            ])
-    }
-
-    pub fn dot(&self, other: Vec3) -> f64 {
-       self.e[0] * other.e[0] + self.e[1] * other.e[1] + self.e[2] * other.e[2]
-    }
-
-    pub fn cross(&self, other: Vec3) -> Vec3 {
-        Vec3::new(
-            [self.e[1] * other.e[2] - self.e[2] * other.e[1],
-             -(self.e[0] * other.e[2] - self.e[2] * other.e[0]),
-             self.e[0] * other.e[1] - self.e[1] * other.e[0]
-            ]
-        )
-    }
-
-    pub fn length(&self) -> f64 {
-        self.squared_length().sqrt()
-    }
-
-    pub fn squared_length(&self) -> f64 {
-        self.e[0].powi(2) + self.e[1].powi(2) + self.e[2].powi(2)
-    }
-
-    pub fn unit_vector(&self) -> Vec3 {
-       let l = self.length();
-       self.clone() / l
-    }
-
-}
-
-
-impl Add<Vec3> for Vec3 {
-  type Output = Vec3;
-
-  fn add(self, other: Vec3) -> Vec3 {
-      self.apply_per_element(other, |a, b| a + b)
-  }
-}
-
-impl Add<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn add(self, k: f64) -> Vec3 {
-        self.map(|i| i + k)
-    }
-}
-
-impl Add<Vec3> for f64 {
-    type Output = Vec3;
-
-    fn add(self, v: Vec3) -> Vec3 {
-        v.map(|i| i + self)
-    }
-}
-
-impl Sub<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn sub(self, other: Vec3) -> Vec3 {
-        self.apply_per_element(other, |a, b| a - b)
-    }
-}
-
-impl Sub<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn sub(self, k: f64) -> Vec3 {
-        self.map(|i| i - k)
-    }
-}
-
-impl Mul<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, other: Vec3) -> Vec3 {
-        self.apply_per_element(other, |a, b| a * b)
-    }
-}
-
-impl Mul<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, k: f64) -> Vec3 {
-        self.map(|i| i * k)
-    }
-}
-
-impl Mul<Vec3> for f64 {
-    type Output = Vec3;
-
-    fn mul(self, v: Vec3) -> Vec3 {
-        v.map(|i| i * self)
-    }
-}
-
-impl Div<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn div(self, other: Vec3) -> Vec3 {
-        self.apply_per_element(other, |a, b| a / b)
-    }
-}
-
-impl Div<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn div(self, k: f64) -> Vec3 {
-        self.map(|i| i / k)
-    }
-}
 
 
 
