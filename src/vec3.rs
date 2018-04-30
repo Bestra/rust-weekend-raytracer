@@ -1,3 +1,5 @@
+extern crate rand;
+use vec3::rand::distributions::{IndependentSample, Range};
 use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, Clone, Copy)]
@@ -63,6 +65,22 @@ impl Vec3 {
     pub fn unit_vector(&self) -> Vec3 {
         let l = self.length();
         *self / l
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3 {
+        let between = Range::new(0.0, 1.0);
+        let mut rng = rand::thread_rng();
+
+        loop {
+            let a = between.ind_sample(&mut rng);
+            let b = between.ind_sample(&mut rng);
+            let c = between.ind_sample(&mut rng);
+            let p = 2.0 * Vec3::new([a, b, c]) - Vec3::new([1.0, 1.0, 1.0]);
+
+            if p.squared_length() >= 1.0 {
+                return p;
+            }
+        }
     }
 }
 

@@ -74,7 +74,10 @@ fn main() {
 
 pub fn color<T: Hittable>(r: &Ray, world: &T) -> Vec3 {
     match world.hit(r, 0.0, core::f64::MAX) {
-        Some(h) => 0.5 * Vec3::new([h.normal.x() + 1.0, h.normal.y() + 1.0, h.normal.z() + 1.0]),
+        Some(h) => {
+            let target = h.p + h.normal + Vec3::random_in_unit_sphere();
+            0.5 * color( &Ray::new( h.p, target - h.p), world)
+        },
 
         None => {
             let unit_direction = r.direction().unit_vector();
