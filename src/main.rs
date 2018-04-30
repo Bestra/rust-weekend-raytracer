@@ -52,6 +52,8 @@ fn main() {
 
             let col = total_color / ns as f64;
 
+            let col = Vec3::new([ col.x().sqrt(), col.y().sqrt(), col.z().sqrt()]);
+
             let ir = 255.99 * col.x();
             let ig = 255.99 * col.y();
             let ib = 255.99 * col.z();
