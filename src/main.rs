@@ -1,7 +1,9 @@
 extern crate png;
 extern crate weekend_raytracer;
+extern crate core;
 
 use weekend_raytracer::{Vec3, Ray};
+use weekend_raytracer::geo::{Sphere, Hittable, HittableList};
 
 use png::HasParameters;
 use std::fs::File;
@@ -25,8 +27,21 @@ fn main() {
         let u = i as f64 / nx as f64;
         let v = j as f64 / ny as f64;
 
+        let world = HittableList {
+            list: vec![
+                Box::new(Sphere {
+                    center: Vec3::new([0.0, 0.0, -1.0]),
+                    radius: 0.5
+                }),
+                Box::new(Sphere {
+                    center: Vec3::new([0.0, -100.5, -1.0]),
+                    radius: 100.0
+                }),
+            ]
+        };
+
         let r = Ray::new(origin, lower_left_corner + u * horizontal + v * vertical);
-        let col = color(&r);
+        let col = color(&r, world);
 
         let ir = 255.99 * col.x();
         let ig = 255.99 * col.y();
@@ -49,25 +64,10 @@ fn main() {
   writer.write_image_data(&img).unwrap();
 }
 
-pub fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> Option<f64> {
-    let oc = r.origin() - center;
-    let a = r.direction().dot(r.direction());
-    let b = 2.0 * oc.dot(r.direction());
-    let c = oc.dot(oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
-    if discriminant > 0.0 {
-        let closest_t = (-b - discriminant.sqrt()) / (2.0 * a);
-        Some(closest_t)
-    } else {
-        None
-    }
-}
-
-pub fn color(r: &Ray) -> Vec3 {
-    match hit_sphere(Vec3::new([0.0, 0.0, -1.0]), 0.5, r) {
-        Some(t) => {
-            let n = (r.point_at_parameter(t) - Vec3::new([0.0, 0.0, -1.0])).unit_vector();
-            0.5 * Vec3::new([n.x() + 1.0, n.y() + 1.0, n.z() + 1.0])
+pub fn color<T: Hittable>(r: &Ray, world: T) -> Vec3 {
+    match world.hit(r, 0.0, core::f64::MAX) {
+        Some(h) => {
+            0.5 * Vec3::new([h.normal.x() + 1.0, h.normal.y() + 1.0, h.normal.z() + 1.0])
         }
 
         None => {
@@ -77,22 +77,3 @@ pub fn color(r: &Ray) -> Vec3 {
         }
     }
 }
-
-
-
-
-
-
-// fn print_png() {
-//     let mut path = env::current_dir().unwrap();
-//     path.push(format!("test{}.png", 1));
-//     let file = File::create(path).unwrap();
-//     let ref mut w = BufWriter::new(file);
-
-//     let mut encoder = png::Encoder::new(w, 200, 100);
-//     encoder.set(png::ColorType::RGB)
-//     .set(png::BitDepth::Eight);
-
-//     let mut writer = encoder.write_header().unwrap();
-//     writer.write_image_data(&big_vec).unwrap();
-// }

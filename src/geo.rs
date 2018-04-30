@@ -1,23 +1,23 @@
 use vec3::{Vec3, Ray};
 
 pub struct HitRecord {
-    t: f64,
-    p: Vec3,
-    normal: Vec3,
+    pub t: f64,
+    pub p: Vec3,
+    pub normal: Vec3,
 }
 
 pub trait Hittable {
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 
 
 pub struct Sphere {
-    center: Vec3,
-    radius: f64
+    pub center: Vec3,
+    pub radius: f64
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc = r.origin() - self.center;
         let a = r.direction().dot(r.direction());
         let b = oc.dot(r.direction());
@@ -51,16 +51,16 @@ impl Hittable for Sphere {
 }
 
 pub struct HittableList {
-    list: Vec<Box<Hittable>>,
+    pub list: Vec<Box<Hittable>>,
 }
 
 impl Hittable for HittableList {
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let mut hit = None;
         let mut closest_so_far = t_max;
 
         for item in &self.list {
-            match item.hit(r.clone(), t_min, closest_so_far) {
+            match item.hit(&r.clone(), t_min, closest_so_far) {
                 Some(temp_rec) => {
                     closest_so_far = temp_rec.t;
                     hit = Some(temp_rec)
