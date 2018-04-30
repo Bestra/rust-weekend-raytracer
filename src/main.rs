@@ -75,7 +75,7 @@ fn main() {
 }
 
 pub fn color<T: Hittable>(r: &Ray, world: &T) -> Vec3 {
-    match world.hit(r, 0.0, core::f64::MAX) {
+    match world.hit(r, 0.001, core::f64::MAX) {
         Some(h) => {
             let target = h.p + h.normal + Vec3::random_in_unit_sphere();
             0.5 * color( &Ray::new( h.p, target - h.p), world)
