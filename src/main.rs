@@ -5,12 +5,14 @@ extern crate weekend_raytracer;
 
 use png::HasParameters;
 use std::fs::File;
+use std::rc::Rc;
 use std::env;
 use std::io::BufWriter;
 use rand::distributions::{IndependentSample, Range};
 
 use weekend_raytracer::{Ray, Vec3};
 use weekend_raytracer::geo::{Hittable, HittableList, Sphere};
+use weekend_raytracer::material::{Lambertian, Metal};
 
 fn main() {
     let nx = 200;
@@ -25,10 +27,22 @@ fn main() {
             Box::new(Sphere {
                 center: Vec3::new([0.0, 0.0, -1.0]),
                 radius: 0.5,
+                material: Rc::new(Lambertian { albedo: Vec3::new([0.8, 0.3, 0.3])}),
             }),
             Box::new(Sphere {
                 center: Vec3::new([0.0, -100.5, -1.0]),
                 radius: 100.0,
+                material: Rc::new(Lambertian { albedo: Vec3::new([0.8, 0.8, 0.0])}),
+            }),
+            Box::new(Sphere {
+                center: Vec3::new([1.0, 0.0, -1.0]),
+                radius: 0.5,
+                material: Rc::new(Metal { albedo: Vec3::new([0.8, 0.6, 0.2])}),
+            }),
+            Box::new(Sphere {
+                center: Vec3::new([-1.0, 0.0, -1.0]),
+                radius: 0.5,
+                material: Rc::new(Metal { albedo: Vec3::new([0.8, 0.8, 0.8])}),
             }),
         ],
     };
@@ -47,7 +61,7 @@ fn main() {
                 let u = (i as f64 + a) / nx as f64;
                 let v = (j as f64 + b)/ ny as f64;
                 let r = cam.get_ray(u, v);
-                total_color = total_color + color(&r, &world);
+                total_color = total_color + color(&r, &world, 0);
             }
 
             let col = total_color / ns as f64;
@@ -74,11 +88,21 @@ fn main() {
     writer.write_image_data(&img).unwrap();
 }
 
-pub fn color<T: Hittable>(r: &Ray, world: &T) -> Vec3 {
+pub fn color<T: Hittable>(r: &Ray, world: &T, depth: i8) -> Vec3 {
     match world.hit(r, 0.001, core::f64::MAX) {
-        Some(h) => {
-            let target = h.p + h.normal + Vec3::random_in_unit_sphere();
-            0.5 * color( &Ray::new( h.p, target - h.p), world)
+        Some(rec) => {
+            if depth < 50 {
+                let r_clone = rec.clone();
+                match rec.material.scatter(r.clone(), r_clone) {
+                    Some(h) => {
+                        h.attenuation * color(&h.scattered, world, depth + 1)
+                    }
+
+                    None => Vec3::new([0.0, 0.0, 0.0])
+                }
+            } else {
+                Vec3::new([0.0, 0.0, 0.0])
+            }
         },
 
         None => {

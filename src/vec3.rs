@@ -84,6 +84,14 @@ impl Vec3 {
     }
 }
 
+pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+    v - 2.0 * dot(v, n) * n
+}
+
+pub fn dot(v: Vec3, other: Vec3) -> f64 {
+    v.e[0] * other.e[0] + v.e[1] * other.e[1] + v.e[2] * other.e[2]
+}
+
 impl Add<Vec3> for Vec3 {
     type Output = Vec3;
 

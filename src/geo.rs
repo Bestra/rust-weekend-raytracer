@@ -1,19 +1,33 @@
-use vec3::{Vec3, Ray};
+use vec3::{Ray, Vec3};
+use material::Material;
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct HitRecord {
     pub t: f64,
     pub p: Vec3,
     pub normal: Vec3,
+    pub material: Rc<Material>,
 }
 
 pub trait Hittable {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 
-
 pub struct Sphere {
     pub center: Vec3,
-    pub radius: f64
+    pub radius: f64,
+    pub material: Rc<Material>,
+}
+
+impl Sphere {
+    pub fn new(center: Vec3, radius: f64, material: Rc<Material>) -> Sphere {
+        Sphere {
+            center,
+            radius,
+            material,
+        }
+    }
 }
 
 impl Hittable for Sphere {
@@ -30,7 +44,12 @@ impl Hittable for Sphere {
                 let p = r.point_at_parameter(t);
                 let normal = (p - self.center) / self.radius;
 
-                return Some(HitRecord {t, p, normal})
+                return Some(HitRecord {
+                    t,
+                    p,
+                    normal,
+                    material: Rc::clone(&self.material),
+                });
             }
 
             let temp_plus = (-b + (b * b - a * c).sqrt()) / a;
@@ -39,7 +58,12 @@ impl Hittable for Sphere {
                 let p = r.point_at_parameter(temp_plus);
                 let normal = (p - self.center) / self.radius;
 
-                return Some(HitRecord {t, p, normal})
+                return Some(HitRecord {
+                    t,
+                    p,
+                    normal,
+                    material: Rc::clone(&self.material),
+                });
             }
             None
         } else {
@@ -66,7 +90,7 @@ impl Hittable for HittableList {
                     hit = Some(temp_rec)
                 }
 
-                None => ()
+                None => (),
             }
         }
 
