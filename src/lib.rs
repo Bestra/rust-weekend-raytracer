@@ -1,3 +1,4 @@
+extern crate rand;
 pub mod geo;
 pub mod vec3;
 pub mod material;

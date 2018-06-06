@@ -8,7 +8,7 @@ use std::fs::File;
 use std::rc::Rc;
 use std::env;
 use std::io::BufWriter;
-use rand::distributions::{IndependentSample, Range};
+use rand::prelude::*;
 
 use weekend_raytracer::{Ray, Vec3};
 use weekend_raytracer::geo::{Hittable, HittableList, Sphere};
@@ -47,16 +47,15 @@ fn main() {
         ],
     };
 
-    let between = Range::new(0.0, 1.0);
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
 
     for j in (0..ny).rev() {
         for i in 0..nx {
             let mut total_color = Vec3::new([0.0, 0.0, 0.0]);
 
             for _s in 0..ns {
-                let a = between.ind_sample(&mut rng);
-                let b = between.ind_sample(&mut rng);
+                let a: f64 = rng.gen();
+                let b: f64 = rng.gen();
 
                 let u = (i as f64 + a) / nx as f64;
                 let v = (j as f64 + b)/ ny as f64;
