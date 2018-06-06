@@ -75,7 +75,7 @@ impl Vec3 {
             let c: f64 = rng.gen();
             let p = 2.0 * Vec3::new([a, b, c]) - Vec3::new([1.0, 1.0, 1.0]);
 
-            if p.squared_length() >= 1.0 {
+            if p.squared_length() < 1.0 {
                 return p;
             }
         }
@@ -93,7 +93,7 @@ pub fn dot(v: Vec3, other: Vec3) -> f64 {
 pub fn refract(v: Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
     let uv = v.unit_vector();
     let dt = dot(uv, n);
-    let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+    let discriminant = 1.0 - (ni_over_nt * ni_over_nt) * (1.0 - (dt * dt));
 
     if discriminant > 0.0 {
         Some(ni_over_nt * (uv - n * dt) - n * discriminant.sqrt())

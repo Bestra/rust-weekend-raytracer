@@ -17,7 +17,7 @@ use weekend_raytracer::material::{Lambertian, Metal, Dielectric};
 fn main() {
     let nx = 200;
     let ny = 100;
-    let ns = 50;
+    let ns = 20;
 
     let mut img = vec![];
 
@@ -42,6 +42,11 @@ fn main() {
             Box::new(Sphere {
                 center: Vec3::new([-1.0, 0.0, -1.0]),
                 radius: 0.5,
+                material: Rc::new(Dielectric { ref_idx: 1.5 }),
+            }),
+            Box::new(Sphere {
+                center: Vec3::new([-1.0, 0.0, -1.0]),
+                radius: -0.45,
                 material: Rc::new(Dielectric { ref_idx: 1.5 }),
             }),
         ],
