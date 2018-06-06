@@ -12,12 +12,12 @@ use rand::distributions::{IndependentSample, Range};
 
 use weekend_raytracer::{Ray, Vec3};
 use weekend_raytracer::geo::{Hittable, HittableList, Sphere};
-use weekend_raytracer::material::{Lambertian, Metal};
+use weekend_raytracer::material::{Lambertian, Metal, Dielectric};
 
 fn main() {
     let nx = 200;
     let ny = 100;
-    let ns = 30;
+    let ns = 50;
 
     let mut img = vec![];
 
@@ -27,7 +27,7 @@ fn main() {
             Box::new(Sphere {
                 center: Vec3::new([0.0, 0.0, -1.0]),
                 radius: 0.5,
-                material: Rc::new(Lambertian { albedo: Vec3::new([0.8, 0.3, 0.3])}),
+                material: Rc::new(Lambertian { albedo: Vec3::new([0.1, 0.2, 0.5])}),
             }),
             Box::new(Sphere {
                 center: Vec3::new([0.0, -100.5, -1.0]),
@@ -37,12 +37,12 @@ fn main() {
             Box::new(Sphere {
                 center: Vec3::new([1.0, 0.0, -1.0]),
                 radius: 0.5,
-                material: Rc::new(Metal { albedo: Vec3::new([0.8, 0.6, 0.2])}),
+                material: Rc::new(Metal { fuzz: 0.0, albedo: Vec3::new([0.8, 0.6, 0.2])}),
             }),
             Box::new(Sphere {
                 center: Vec3::new([-1.0, 0.0, -1.0]),
                 radius: 0.5,
-                material: Rc::new(Metal { albedo: Vec3::new([0.8, 0.8, 0.8])}),
+                material: Rc::new(Dielectric { ref_idx: 1.5 }),
             }),
         ],
     };

@@ -71,7 +71,6 @@ impl Hittable for Sphere {
         }
     }
 
-    // fn test_hit(self, t: f64, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>
 }
 
 pub struct HittableList {

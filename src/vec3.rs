@@ -1,6 +1,6 @@
 extern crate rand;
 use vec3::rand::distributions::{IndependentSample, Range};
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
@@ -92,6 +92,18 @@ pub fn dot(v: Vec3, other: Vec3) -> f64 {
     v.e[0] * other.e[0] + v.e[1] * other.e[1] + v.e[2] * other.e[2]
 }
 
+pub fn refract(v: Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
+    let uv = v.unit_vector();
+    let dt = dot(uv, n);
+    let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+
+    if discriminant > 0.0 {
+        Some(ni_over_nt * (uv - n * dt) - n * discriminant.sqrt())
+    } else {
+        None
+    }
+}
+
 impl Add<Vec3> for Vec3 {
     type Output = Vec3;
 
@@ -169,6 +181,14 @@ impl Div<f64> for Vec3 {
 
     fn div(self, k: f64) -> Vec3 {
         self.map(|i| i / k)
+    }
+}
+
+impl Neg for Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Vec3 {
+        self.map(|i| -i)
     }
 }
 
