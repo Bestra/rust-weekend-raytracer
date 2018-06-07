@@ -54,7 +54,7 @@ pub struct Dielectric {
 impl Material for Dielectric {
     fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection> {
         let reflected = reflect(r_in.direction(), rec.normal);
-        let attenuation = Vec3::new([1.0, 1.0, 0.0]);
+        let attenuation = Vec3::new([1.0, 1.0, 1.0]);
         let rdotn = dot(r_in.direction(), rec.normal);
 
         let (outward_normal, ni_over_nt, cosine) = if rdotn > 0.0 {
