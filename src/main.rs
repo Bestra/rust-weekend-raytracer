@@ -10,10 +10,10 @@ use std::env;
 use std::io::BufWriter;
 use rand::prelude::*;
 
-use weekend_raytracer::{Ray, Vec3};
+use weekend_raytracer::vec3::{vec3, Ray, Vec3};
 use weekend_raytracer::geo::{Hittable, HittableList, Sphere};
-use weekend_raytracer::material::{Lambertian, Metal, Dielectric};
-use weekend_raytracer::camera::{Camera};
+use weekend_raytracer::material::{Dielectric, Lambertian, Metal};
+use weekend_raytracer::camera::Camera;
 
 fn main() {
     let nx = 200;
@@ -22,23 +22,36 @@ fn main() {
 
     let mut img = vec![];
 
-    let cam = Camera::new(90.0, nx as f64 / ny as f64);
+    let cam = Camera::new(
+        vec3(-2.0, 2.0, 1.0),
+        vec3(0.0, -0.0, -1.0),
+        vec3(0.0, 1.0, 0.0),
+        20.0,
+        nx as f64 / ny as f64
+    );
     let world = HittableList {
         list: vec![
             Box::new(Sphere {
                 center: Vec3::new([0.0, 0.0, -1.0]),
                 radius: 0.5,
-                material: Rc::new(Lambertian { albedo: Vec3::new([0.1, 0.2, 0.5])}),
+                material: Rc::new(Lambertian {
+                    albedo: Vec3::new([0.1, 0.2, 0.5]),
+                }),
             }),
             Box::new(Sphere {
                 center: Vec3::new([0.0, -100.5, -1.0]),
                 radius: 100.0,
-                material: Rc::new(Lambertian { albedo: Vec3::new([0.8, 0.8, 0.0])}),
+                material: Rc::new(Lambertian {
+                    albedo: Vec3::new([0.8, 0.8, 0.0]),
+                }),
             }),
             Box::new(Sphere {
                 center: Vec3::new([1.0, 0.0, -1.0]),
                 radius: 0.5,
-                material: Rc::new(Metal { fuzz: 0.0, albedo: Vec3::new([0.8, 0.6, 0.2])}),
+                material: Rc::new(Metal {
+                    fuzz: 0.0,
+                    albedo: Vec3::new([0.8, 0.6, 0.2]),
+                }),
             }),
             Box::new(Sphere {
                 center: Vec3::new([-1.0, 0.0, -1.0]),
@@ -64,14 +77,14 @@ fn main() {
                 let b: f64 = rng.gen();
 
                 let u = (i as f64 + a) / nx as f64;
-                let v = (j as f64 + b)/ ny as f64;
+                let v = (j as f64 + b) / ny as f64;
                 let r = cam.get_ray(u, v);
                 total_color = total_color + color(&r, &world, 0);
             }
 
             let col = total_color / ns as f64;
 
-            let col = Vec3::new([ col.x().sqrt(), col.y().sqrt(), col.z().sqrt()]);
+            let col = Vec3::new([col.x().sqrt(), col.y().sqrt(), col.z().sqrt()]);
 
             let ir = 255.99 * col.x();
             let ig = 255.99 * col.y();
@@ -99,16 +112,14 @@ pub fn color<T: Hittable>(r: &Ray, world: &T, depth: i8) -> Vec3 {
             if depth < 50 {
                 let r_clone = rec.clone();
                 match rec.material.scatter(r.clone(), r_clone) {
-                    Some(h) => {
-                        h.attenuation * color(&h.scattered, world, depth + 1)
-                    }
+                    Some(h) => h.attenuation * color(&h.scattered, world, depth + 1),
 
-                    None => Vec3::new([0.0, 0.0, 0.0])
+                    None => Vec3::new([0.0, 0.0, 0.0]),
                 }
             } else {
                 Vec3::new([0.0, 0.0, 0.0])
             }
-        },
+        }
 
         None => {
             let unit_direction = r.direction().unit_vector();
@@ -117,4 +128,3 @@ pub fn color<T: Hittable>(r: &Ray, world: &T, depth: i8) -> Vec3 {
         }
     }
 }
-

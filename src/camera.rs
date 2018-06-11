@@ -8,14 +8,19 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(vfov: f64, aspect: f64) -> Camera {
+    // vfov is top to bottom in degrees
+    pub fn new(look_from: Vec3, look_at: Vec3, v_up: Vec3, vfov: f64, aspect: f64) -> Camera {
         let theta = vfov * PI / 180.0;
         let half_height = (theta / 2.0).tan();
         let half_width = aspect * half_height;
-        let lower_left_corner = vec3(-half_width, -half_height, -1.0);
-        let horizontal = vec3(2.0 * half_width, 0.0, 0.0);
-        let vertical = vec3(0.0, 2.0 * half_height, 0.0);
-        let origin = vec3(0.0, 0.0, 0.0);
+        let origin = look_from;
+        let w = (look_from - look_at).unit_vector();
+        let u = v_up.cross(w).unit_vector();
+        let v = w.cross(u);
+
+        let lower_left_corner = origin - half_width * u - half_height * v - w;
+        let horizontal = 2.0 * half_width * u;
+        let vertical = 2.0 * half_height * v;
 
         Camera {
             origin,
