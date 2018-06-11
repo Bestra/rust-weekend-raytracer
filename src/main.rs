@@ -13,6 +13,7 @@ use rand::prelude::*;
 use weekend_raytracer::{Ray, Vec3};
 use weekend_raytracer::geo::{Hittable, HittableList, Sphere};
 use weekend_raytracer::material::{Lambertian, Metal, Dielectric};
+use weekend_raytracer::camera::{Camera};
 
 fn main() {
     let nx = 200;
@@ -21,7 +22,7 @@ fn main() {
 
     let mut img = vec![];
 
-    let cam = Camera::new();
+    let cam = Camera::new(90.0, nx as f64 / ny as f64);
     let world = HittableList {
         list: vec![
             Box::new(Sphere {
@@ -117,32 +118,3 @@ pub fn color<T: Hittable>(r: &Ray, world: &T, depth: i8) -> Vec3 {
     }
 }
 
-pub struct Camera {
-    lower_left_corner: Vec3,
-    horizontal: Vec3,
-    vertical: Vec3,
-    origin: Vec3,
-}
-
-impl Camera {
-    pub fn new() -> Camera {
-        let lower_left_corner = Vec3::new([-2.0, -1.0, -1.0]);
-        let horizontal = Vec3::new([4.0, 0.0, 0.0]);
-        let vertical = Vec3::new([0.0, 2.0, 0.0]);
-        let origin = Vec3::new([0.0, 0.0, 0.0]);
-
-        Camera {
-            lower_left_corner,
-            horizontal,
-            vertical,
-            origin,
-        }
-    }
-
-    pub fn get_ray(&self, u: f64, v: f64) -> Ray {
-        Ray::new(
-            self.origin,
-            self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin,
-        )
-    }
-}
