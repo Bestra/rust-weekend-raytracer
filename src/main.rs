@@ -18,16 +18,22 @@ use weekend_raytracer::camera::Camera;
 fn main() {
     let nx = 200;
     let ny = 100;
-    let ns = 20;
+    let ns = 40;
 
     let mut img = vec![];
 
+    let look_from = vec3(3, 3, 2);
+    let look_at = vec3(0, 0, -1);
+    let dist_to_focus = (look_from - look_at).length();
+    let aperture = 2.0;
     let cam = Camera::new(
-        vec3(-2.0, 2.0, 1.0),
-        vec3(0.0, -0.0, -1.0),
-        vec3(0.0, 1.0, 0.0),
+        look_from,
+        look_at,
+        vec3(0, 1, 0),
         20.0,
-        nx as f64 / ny as f64
+        nx as f64 / ny as f64,
+        aperture,
+        dist_to_focus
     );
     let world = HittableList {
         list: vec![

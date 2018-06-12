@@ -73,17 +73,31 @@ impl Vec3 {
             let a: f64 = rng.gen();
             let b: f64 = rng.gen();
             let c: f64 = rng.gen();
-            let p = 2.0 * Vec3::new([a, b, c]) - Vec3::new([1.0, 1.0, 1.0]);
+            let p = 2.0 * Vec3::new([a, b, c]) - vec3(1, 1, 1);
 
             if p.squared_length() < 1.0 {
                 return p;
             }
         }
     }
+
+    pub fn random_in_unit_disk() -> Vec3 {
+        let mut rng = thread_rng();
+
+        loop {
+            let a: f64 = rng.gen();
+            let b: f64 = rng.gen();
+            let p = 2.0 * vec3(a, b, 0.0) - vec3(1, 1, 0);
+
+            if dot(p, p) < 1.0 {
+                return p;
+            }
+        }
+    }
 }
 
-pub fn vec3(x: f64, y: f64, z: f64) -> Vec3 {
-    Vec3::new([x, y, z])
+pub fn vec3<T: Into<f64>>(x: T, y: T, z: T) -> Vec3 {
+    Vec3::new([x.into(), y.into(), z.into()])
 }
 
 pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
