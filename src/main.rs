@@ -20,7 +20,7 @@ fn main() {
     let ny = 100;
     let ns = 40;
 
-    let mut img = Vec::with_capacity((nx * ny * 3) as usize);
+    let mut img = vec![0u8; (nx * ny * 3) as usize];
 
     let look_from = vec3(3, 3, 2);
     let look_at = vec3(0, 0, -1);
@@ -73,32 +73,36 @@ fn main() {
     };
 
     let mut rng = thread_rng();
+    img.chunks_mut((nx * 3) as usize)
+        .rev()
+        .enumerate()
+        .for_each(|(j, row)| {
+            for (i, rgb) in row.chunks_mut(3usize).enumerate() {
+                let mut total_color = vec3(0.0, 0.0, 0.0);
 
-    for j in (0..ny).rev() {
-        for i in 0..nx {
-            let mut total_color = vec3(0.0, 0.0, 0.0);
+                for _s in 0..ns {
+                    let a: f64 = rng.gen();
+                    let b: f64 = rng.gen();
 
-            for _s in 0..ns {
-                let a: f64 = rng.gen();
-                let b: f64 = rng.gen();
+                    let u = (i as f64 + a) / nx as f64;
+                    let v = (j as f64 + b) / ny as f64;
+                    let r = cam.get_ray(u, v);
+                    total_color = total_color + color(&r, &world, 0);
+                }
 
-                let u = (i as f64 + a) / nx as f64;
-                let v = (j as f64 + b) / ny as f64;
-                let r = cam.get_ray(u, v);
-                total_color = total_color + color(&r, &world, 0);
+                let col = total_color / ns as f64;
+
+                let col = vec3(col.x().sqrt(), col.y().sqrt(), col.z().sqrt());
+
+                let ir = 255.99 * col.x();
+                let ig = 255.99 * col.y();
+                let ib = 255.99 * col.z();
+                let mut iter = rgb.iter_mut();
+                *iter.next().unwrap() = ir as u8;
+                *iter.next().unwrap() = ig as u8;
+                *iter.next().unwrap() = ib as u8;
             }
-
-            let col = total_color / ns as f64;
-
-            let col = vec3(col.x().sqrt(), col.y().sqrt(), col.z().sqrt());
-
-            let ir = 255.99 * col.x();
-            let ig = 255.99 * col.y();
-            let ib = 255.99 * col.z();
-
-            img.append(&mut vec![ir as u8, ig as u8, ib as u8])
-        }
-    }
+        });
 
     let mut path = env::current_dir().unwrap();
     path.push(format!("test{}.png", 1));
