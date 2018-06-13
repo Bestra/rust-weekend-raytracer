@@ -20,12 +20,12 @@ fn main() {
     let ny = 100;
     let ns = 40;
 
-    let mut img = vec![];
+    let mut img = Vec::with_capacity((nx * ny * 3) as usize);
 
     let look_from = vec3(3, 3, 2);
     let look_at = vec3(0, 0, -1);
     let dist_to_focus = (look_from - look_at).length();
-    let aperture = 2.0;
+    let aperture = 3.0;
     let cam = Camera::new(
         look_from,
         look_at,
@@ -38,34 +38,34 @@ fn main() {
     let world = HittableList {
         list: vec![
             Box::new(Sphere {
-                center: Vec3::new([0.0, 0.0, -1.0]),
+                center: vec3(0.0, 0.0, -1.0),
                 radius: 0.5,
                 material: Rc::new(Lambertian {
-                    albedo: Vec3::new([0.1, 0.2, 0.5]),
+                    albedo: vec3(0.1, 0.2, 0.5),
                 }),
             }),
             Box::new(Sphere {
-                center: Vec3::new([0.0, -100.5, -1.0]),
+                center: vec3(0.0, -100.5, -1.0),
                 radius: 100.0,
                 material: Rc::new(Lambertian {
-                    albedo: Vec3::new([0.8, 0.8, 0.0]),
+                    albedo: vec3(0.8, 0.8, 0.0),
                 }),
             }),
             Box::new(Sphere {
-                center: Vec3::new([1.0, 0.0, -1.0]),
+                center: vec3(1.0, 0.0, -1.0),
                 radius: 0.5,
                 material: Rc::new(Metal {
                     fuzz: 0.0,
-                    albedo: Vec3::new([0.8, 0.6, 0.2]),
+                    albedo: vec3(0.8, 0.6, 0.2),
                 }),
             }),
             Box::new(Sphere {
-                center: Vec3::new([-1.0, 0.0, -1.0]),
+                center: vec3(-1.0, 0.0, -1.0),
                 radius: 0.5,
                 material: Rc::new(Dielectric { ref_idx: 1.5 }),
             }),
             Box::new(Sphere {
-                center: Vec3::new([-1.0, 0.0, -1.0]),
+                center: vec3(-1.0, 0.0, -1.0),
                 radius: -0.45,
                 material: Rc::new(Dielectric { ref_idx: 1.5 }),
             }),
@@ -76,7 +76,7 @@ fn main() {
 
     for j in (0..ny).rev() {
         for i in 0..nx {
-            let mut total_color = Vec3::new([0.0, 0.0, 0.0]);
+            let mut total_color = vec3(0.0, 0.0, 0.0);
 
             for _s in 0..ns {
                 let a: f64 = rng.gen();
@@ -90,7 +90,7 @@ fn main() {
 
             let col = total_color / ns as f64;
 
-            let col = Vec3::new([col.x().sqrt(), col.y().sqrt(), col.z().sqrt()]);
+            let col = vec3(col.x().sqrt(), col.y().sqrt(), col.z().sqrt());
 
             let ir = 255.99 * col.x();
             let ig = 255.99 * col.y();
@@ -120,17 +120,17 @@ pub fn color<T: Hittable>(r: &Ray, world: &T, depth: i8) -> Vec3 {
                 match rec.material.scatter(r.clone(), r_clone) {
                     Some(h) => h.attenuation * color(&h.scattered, world, depth + 1),
 
-                    None => Vec3::new([0.0, 0.0, 0.0]),
+                    None => vec3(0.0, 0.0, 0.0),
                 }
             } else {
-                Vec3::new([0.0, 0.0, 0.0])
+                vec3(0.0, 0.0, 0.0)
             }
         }
 
         None => {
             let unit_direction = r.direction().unit_vector();
             let t = 0.5 * (unit_direction.y() + 1.0);
-            (1.0 - t) * Vec3::new([1.0, 1.0, 1.0]) + t * Vec3::new([0.5, 0.7, 1.0])
+            (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0)
         }
     }
 }
