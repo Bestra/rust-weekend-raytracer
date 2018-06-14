@@ -2,30 +2,33 @@ extern crate core;
 extern crate png;
 extern crate rand;
 extern crate weekend_raytracer;
+extern crate rayon;
 
 use png::HasParameters;
 use std::fs::File;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::env;
 use std::io::BufWriter;
 use rand::prelude::*;
+use rayon::prelude::*;
 
 use weekend_raytracer::vec3::{vec3, Ray, Vec3};
-use weekend_raytracer::geo::{Hittable, HittableList, Sphere};
+use weekend_raytracer::geo::{Hittable, HittableList, Sphere, random_scene};
 use weekend_raytracer::material::{Dielectric, Lambertian, Metal};
 use weekend_raytracer::camera::Camera;
 
 fn main() {
-    let nx = 200;
-    let ny = 100;
-    let ns = 40;
+    let mul = 5;
+    let nx = mul * 200;
+    let ny = mul * 100;
+    let ns = 20;
 
     let mut img = vec![0u8; (nx * ny * 3) as usize];
 
-    let look_from = vec3(3, 3, 2);
-    let look_at = vec3(0, 0, -1);
-    let dist_to_focus = (look_from - look_at).length();
-    let aperture = 3.0;
+    let look_from = vec3(13, 2, 3);
+    let look_at = vec3(0, 0, 0);
+    let dist_to_focus = 10.0;
+    let aperture = 0.1;
     let cam = Camera::new(
         look_from,
         look_at,
@@ -40,21 +43,21 @@ fn main() {
             Box::new(Sphere {
                 center: vec3(0.0, 0.0, -1.0),
                 radius: 0.5,
-                material: Rc::new(Lambertian {
+                material: Arc::new(Lambertian {
                     albedo: vec3(0.1, 0.2, 0.5),
                 }),
             }),
             Box::new(Sphere {
                 center: vec3(0.0, -100.5, -1.0),
                 radius: 100.0,
-                material: Rc::new(Lambertian {
+                material: Arc::new(Lambertian {
                     albedo: vec3(0.8, 0.8, 0.0),
                 }),
             }),
             Box::new(Sphere {
                 center: vec3(1.0, 0.0, -1.0),
                 radius: 0.5,
-                material: Rc::new(Metal {
+                material: Arc::new(Metal {
                     fuzz: 0.0,
                     albedo: vec3(0.8, 0.6, 0.2),
                 }),
@@ -62,25 +65,26 @@ fn main() {
             Box::new(Sphere {
                 center: vec3(-1.0, 0.0, -1.0),
                 radius: 0.5,
-                material: Rc::new(Dielectric { ref_idx: 1.5 }),
+                material: Arc::new(Dielectric { ref_idx: 1.5 }),
             }),
             Box::new(Sphere {
                 center: vec3(-1.0, 0.0, -1.0),
                 radius: -0.45,
-                material: Rc::new(Dielectric { ref_idx: 1.5 }),
+                material: Arc::new(Dielectric { ref_idx: 1.5 }),
             }),
         ],
     };
 
-    let mut rng = thread_rng();
-    img.chunks_mut((nx * 3) as usize)
+    // let world = random_scene();
+    img.par_chunks_mut((nx * 3) as usize)
         .rev()
         .enumerate()
         .for_each(|(j, row)| {
+            let mut rng = thread_rng();
             for (i, rgb) in row.chunks_mut(3usize).enumerate() {
                 let mut total_color = vec3(0.0, 0.0, 0.0);
 
-                for _s in 0..ns {
+                for _ in 0..ns {
                     let a: f64 = rng.gen();
                     let b: f64 = rng.gen();
 
