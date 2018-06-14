@@ -36,46 +36,48 @@ fn main() {
         20.0,
         nx as f64 / ny as f64,
         aperture,
-        dist_to_focus
+        dist_to_focus,
+        0.0,
+        1.0,
     );
-    let world = HittableList {
-        list: vec![
-            Box::new(Sphere {
-                center: vec3(0.0, 0.0, -1.0),
-                radius: 0.5,
-                material: Arc::new(Lambertian {
-                    albedo: vec3(0.1, 0.2, 0.5),
-                }),
-            }),
-            Box::new(Sphere {
-                center: vec3(0.0, -100.5, -1.0),
-                radius: 100.0,
-                material: Arc::new(Lambertian {
-                    albedo: vec3(0.8, 0.8, 0.0),
-                }),
-            }),
-            Box::new(Sphere {
-                center: vec3(1.0, 0.0, -1.0),
-                radius: 0.5,
-                material: Arc::new(Metal {
-                    fuzz: 0.0,
-                    albedo: vec3(0.8, 0.6, 0.2),
-                }),
-            }),
-            Box::new(Sphere {
-                center: vec3(-1.0, 0.0, -1.0),
-                radius: 0.5,
-                material: Arc::new(Dielectric { ref_idx: 1.5 }),
-            }),
-            Box::new(Sphere {
-                center: vec3(-1.0, 0.0, -1.0),
-                radius: -0.45,
-                material: Arc::new(Dielectric { ref_idx: 1.5 }),
-            }),
-        ],
-    };
+    // let world = HittableList {
+    //     list: vec![
+    //         Box::new(Sphere {
+    //             center: vec3(0.0, 0.0, -1.0),
+    //             radius: 0.5,
+    //             material: Arc::new(Lambertian {
+    //                 albedo: vec3(0.1, 0.2, 0.5),
+    //             }),
+    //         }),
+    //         Box::new(Sphere {
+    //             center: vec3(0.0, -100.5, -1.0),
+    //             radius: 100.0,
+    //             material: Arc::new(Lambertian {
+    //                 albedo: vec3(0.8, 0.8, 0.0),
+    //             }),
+    //         }),
+    //         Box::new(Sphere {
+    //             center: vec3(1.0, 0.0, -1.0),
+    //             radius: 0.5,
+    //             material: Arc::new(Metal {
+    //                 fuzz: 0.0,
+    //                 albedo: vec3(0.8, 0.6, 0.2),
+    //             }),
+    //         }),
+    //         Box::new(Sphere {
+    //             center: vec3(-1.0, 0.0, -1.0),
+    //             radius: 0.5,
+    //             material: Arc::new(Dielectric { ref_idx: 1.5 }),
+    //         }),
+    //         Box::new(Sphere {
+    //             center: vec3(-1.0, 0.0, -1.0),
+    //             radius: -0.45,
+    //             material: Arc::new(Dielectric { ref_idx: 1.5 }),
+    //         }),
+    //     ],
+    // };
 
-    // let world = random_scene();
+    let world = random_scene();
     img.par_chunks_mut((nx * 3) as usize)
         .rev()
         .enumerate()

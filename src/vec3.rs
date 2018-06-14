@@ -212,11 +212,12 @@ impl Neg for Vec3 {
 pub struct Ray {
     a: Vec3,
     b: Vec3,
+    time: f64
 }
 
 impl Ray {
-    pub fn new(a: Vec3, b: Vec3) -> Ray {
-        Ray { a, b }
+    pub fn new(a: Vec3, b: Vec3, ti: f64) -> Ray {
+        Ray { a, b , time: ti }
     }
 
     pub fn origin(&self) -> Vec3 {
@@ -229,5 +230,9 @@ impl Ray {
 
     pub fn point_at_parameter(&self, t: f64) -> Vec3 {
         self.a + self.b * t
+    }
+
+    pub fn time(&self) -> f64 {
+        self.time
     }
 }

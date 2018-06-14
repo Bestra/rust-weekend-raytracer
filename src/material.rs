@@ -14,7 +14,7 @@ pub struct MaterialReflection {
     pub hit: bool
 }
 
-pub trait Material {
+pub trait Material: Sync + Send {
     fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection>;
 }
 
@@ -23,9 +23,9 @@ pub struct Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _r_in: Ray, rec: HitRecord) -> Option<MaterialReflection> {
+    fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection> {
         let target = rec.p + rec.normal + Vec3::random_in_unit_sphere();
-        let scattered = Ray::new(rec.p, target - rec.p);
+        let scattered = Ray::new(rec.p, target - rec.p, r_in.time());
         Some(MaterialReflection { scattered, attenuation: self.albedo, hit: true })
     }
 }
@@ -38,7 +38,7 @@ pub struct Metal {
 impl Material for Metal {
     fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection> {
         let reflected = reflect(r_in.direction().unit_vector(), rec.normal);
-        let scattered = Ray::new(rec.p, reflected + self.fuzz * Vec3::random_in_unit_sphere());
+        let scattered = Ray::new(rec.p, reflected + self.fuzz * Vec3::random_in_unit_sphere(), r_in.time());
         if dot(scattered.direction(), rec.normal) > 0.0 {
             Some(MaterialReflection { scattered: scattered.clone(), attenuation: self.albedo, hit: true })
         } else {
@@ -80,9 +80,9 @@ impl Material for Dielectric {
         let x: f64 = rng.gen();
 
         let scattered = if x < reflect_prob {
-            Ray::new(rec.p, reflected)
+            Ray::new(rec.p, reflected, r_in.time())
         } else {
-            Ray::new(rec.p, refracted)
+            Ray::new(rec.p, refracted, r_in.time())
         };
 
         Some(MaterialReflection { scattered: scattered.clone(), attenuation: attenuation, hit: true })
