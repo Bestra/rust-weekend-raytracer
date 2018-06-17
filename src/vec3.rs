@@ -1,3 +1,4 @@
+use std::ops::Index;
 use rand::prelude::*;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -117,6 +118,14 @@ pub fn refract(v: Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
         Some(ni_over_nt * (uv - n * dt) - n * discriminant.sqrt())
     } else {
         None
+    }
+}
+
+impl Index<usize> for Vec3 {
+    type Output = f64;
+    #[inline]
+    fn index(&self, index: usize) -> &f64 {
+        &self.e[index]
     }
 }
 

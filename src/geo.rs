@@ -1,7 +1,9 @@
-use vec3::{Ray, Vec3, vec3};
+use std::cmp::Ordering;
+use bvh::{surrounding_box, AABB};
 use material::{Dielectric, Lambertian, Material, Metal};
-use std::sync::Arc;
 use rand::prelude::*;
+use std::sync::Arc;
+use vec3::{vec3, Ray, Vec3};
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -13,8 +15,17 @@ pub struct HitRecord {
 
 pub trait Hittable: Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB>;
+    fn box_clone(&self) -> Box<Hittable>;
 }
 
+impl Clone for Box<Hittable> {
+    fn clone(&self) -> Box<Hittable> {
+        self.box_clone()
+    }
+}
+
+#[derive(Clone)]
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f64,
@@ -72,8 +83,19 @@ impl Hittable for Sphere {
         }
     }
 
+    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+        Some(AABB {
+            min: self.center - vec3(self.radius, self.radius, self.radius),
+            max: self.center + vec3(self.radius, self.radius, self.radius),
+        })
+    }
+
+    fn box_clone(&self) -> Box<Hittable> {
+        Box::new((*self).clone())
+    }
 }
 
+#[derive(Clone)]
 pub struct MovingSphere {
     pub center0: Vec3,
     pub center1: Vec3,
@@ -84,7 +106,14 @@ pub struct MovingSphere {
 }
 
 impl MovingSphere {
-    pub fn new(center0: Vec3, center1: Vec3, time0: f64, time1: f64, radius: f64, material: Arc<Material>) -> MovingSphere {
+    pub fn new(
+        center0: Vec3,
+        center1: Vec3,
+        time0: f64,
+        time1: f64,
+        radius: f64,
+        material: Arc<Material>,
+    ) -> MovingSphere {
         MovingSphere {
             center0,
             center1,
@@ -96,7 +125,8 @@ impl MovingSphere {
     }
 
     pub fn center(&self, time: f64) -> Vec3 {
-        self.center0 + ((time - self.time0) / (self.time1 - self.time0)) * (self.center1 - self.center0)
+        self.center0
+            + ((time - self.time0) / (self.time1 - self.time0)) * (self.center1 - self.center0)
     }
 }
 
@@ -141,8 +171,26 @@ impl Hittable for MovingSphere {
         }
     }
 
+    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+        let b0 = AABB {
+            min: self.center0 - vec3(self.radius, self.radius, self.radius),
+            max: self.center0 + vec3(self.radius, self.radius, self.radius),
+        };
+
+        let b1 = AABB {
+            min: self.center1 - vec3(self.radius, self.radius, self.radius),
+            max: self.center1 + vec3(self.radius, self.radius, self.radius),
+        };
+
+        Some(surrounding_box(&b0, &b1))
+    }
+
+    fn box_clone(&self) -> Box<Hittable> {
+        Box::new((*self).clone())
+    }
 }
 
+#[derive(Clone)]
 pub struct HittableList {
     pub list: Vec<Box<Hittable>>,
 }
@@ -165,19 +213,41 @@ impl Hittable for HittableList {
 
         hit
     }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<AABB> {
+        if self.list.len() < 1 {
+            return None;
+        }
+
+        let mut tmp_box;
+
+        tmp_box = self.list[0].bounding_box(t0, t1)?;
+
+        for i in 1..self.list.len() {
+            match self.list[i].bounding_box(t0, t1) {
+                Some(abox) => {
+                    tmp_box = surrounding_box(&abox, &tmp_box);
+                }
+                None => return None,
+            }
+        }
+
+        Some(tmp_box)
+    }
+
+    fn box_clone(&self) -> Box<Hittable> {
+        Box::new((*self).clone())
+    }
 }
 
-
 pub fn random_scene() -> HittableList {
-    let mut list: Vec<Box<Hittable>> = vec![
-        Box::new(Sphere {
-            center: vec3(0, -1000, 0),
-            radius: 1000.0,
-            material: Arc::new(Lambertian {
-                albedo: vec3(0.5, 0.5, 0.5),
-            }),
+    let mut list: Vec<Box<Hittable>> = vec![Box::new(Sphere {
+        center: vec3(0, -1000, 0),
+        radius: 1000.0,
+        material: Arc::new(Lambertian {
+            albedo: vec3(0.5, 0.5, 0.5),
         }),
-    ];
+    })];
 
     let mut rng = thread_rng();
     for a in -10..10 {
@@ -189,7 +259,8 @@ pub fn random_scene() -> HittableList {
 
             if (center - vec3(4.0, 0.2, 0.0)).length() > 0.9 {
                 match choose_mat {
-                    x  if x < 0.8 => { //diffuse
+                    x if x < 0.8 => {
+                        //diffuse
                         let v3: f64 = rng.gen();
                         let a1: f64 = rng.gen();
                         let a2: f64 = rng.gen();
@@ -202,11 +273,12 @@ pub fn random_scene() -> HittableList {
                             0.2,
                             Arc::new(Lambertian {
                                 albedo: vec3(a1, a2, a3),
-                            })))
-                        );
+                            }),
+                        )));
                     }
 
-                    x if x < 0.95 => { // metal
+                    x if x < 0.95 => {
+                        // metal
                         let a1: f64 = rng.gen();
                         let a2: f64 = rng.gen();
                         let a3: f64 = rng.gen();
@@ -217,18 +289,17 @@ pub fn random_scene() -> HittableList {
                             Arc::new(Metal {
                                 albedo: vec3(0.5 * 1.0 + a1, 0.5 * 1.0 + a2, 0.5 * 1.0 + a3),
                                 fuzz: 0.5 * 1.0 + a4,
-                            })))
-                        );
+                            }),
+                        )));
                     }
 
-                    _ => { // glass
+                    _ => {
+                        // glass
                         list.push(Box::new(Sphere::new(
                             center,
                             0.2,
-                            Arc::new(Dielectric {
-                                ref_idx: 1.5,
-                            })))
-                        );
+                            Arc::new(Dielectric { ref_idx: 1.5 }),
+                        )));
                     }
                 }
             }
@@ -258,7 +329,199 @@ pub fn random_scene() -> HittableList {
         }),
     ]);
 
+    HittableList { list }
+}
+
+pub fn simple_spheres() -> HittableList {
     HittableList {
-        list
+        list: vec![
+            Box::new(Sphere {
+                center: vec3(0, -1000, 0),
+                radius: 1000.0,
+                material: Arc::new(Lambertian {
+                    albedo: vec3(0.8, 0.8, 0.0),
+                }),
+            }),
+            Box::new(Sphere {
+                center: vec3(4, 1, 0),
+                radius: 1.0,
+                material: Arc::new(Lambertian {
+                    albedo: vec3(0.1, 0.2, 0.5),
+                }),
+            }),
+            Box::new(Sphere {
+                center: vec3(-4, 1, 0),
+                radius: 1.0,
+                material: Arc::new(Metal {
+                    fuzz: 0.0,
+                    albedo: vec3(0.8, 0.6, 0.2),
+                }),
+            }),
+            Box::new(Sphere {
+                center: vec3(0, 1, 0),
+                radius: 1.0,
+                material: Arc::new(Dielectric { ref_idx: 1.5 }),
+            }),
+            Box::new(Sphere {
+                center: vec3(0, 1, 0),
+                radius: -0.95,
+                material: Arc::new(Dielectric { ref_idx: 1.5 }),
+            }),
+            // Box::new(Sphere {
+            //     center: vec3(0, 1, 0),
+            //     radius: 1.0,
+            //     material: Arc::new(Dielectric { ref_idx: 1.5 }),
+            // }),
+            // Box::new(Sphere {
+            //     center: vec3(-4, 1, 0),
+            //     radius: 1.0,
+            //     material: Arc::new(Lambertian {
+            //         albedo: vec3(0.4, 0.2, 0.1),
+            //     }),
+            // }),
+            // Box::new(Sphere {
+            //     center: vec3(4, 1, 0),
+            //     radius: 1.0,
+            //     material: Arc::new(Metal {
+            //         fuzz: 0.0,
+            //         albedo: vec3(0.8, 0.6, 0.2),
+            //     }),
+            // }),
+        ],
+    }
+}
+
+pub fn box_x_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
+  match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
+      (Some(l), Some(r)) => {
+        if l.min().x() - r.min().x() < 0.0 {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+
+      }
+      _ => panic!("no bounding box found for either l or r")
+  }
+}
+
+pub fn box_y_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
+  match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
+      (Some(l), Some(r)) => {
+        if l.min().y() - r.min().y() < 0.0 {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+
+      }
+      _ => panic!("no bounding box found for either l or r")
+  }
+}
+
+pub fn box_z_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
+  match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
+      (Some(l), Some(r)) => {
+        if l.min().z() - r.min().z() < 0.0 {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+
+      }
+      _ => panic!("no bounding box found for either l or r")
+  }
+}
+
+#[derive(Clone)]
+pub struct BVHNode {
+    left: Box<Hittable>,
+    right: Box<Hittable>,
+    bounding_box: AABB,
+}
+
+impl BVHNode {
+    pub fn new(mut hitable: Vec<Box<Hittable>>, time0: f64, time1: f64) -> BVHNode {
+        let mut rng = thread_rng();
+        let axis = rng.gen_range(0, 2);
+
+        let len = hitable.len();
+        match axis {
+            0 => {
+                hitable.sort_by(box_x_compare);
+            }
+            1 => {
+                hitable.sort_by(box_y_compare);
+            }
+            2 => {
+                hitable.sort_by(box_z_compare);
+            }
+            _ => panic!("this should never happen")
+        }
+
+        let  left: Box<Hittable>;
+        let  right: Box<Hittable>;
+        match len {
+            0 => panic!("empty hittable list"),
+            1 => {
+                left = hitable[0].clone();
+                right = hitable[0].clone();
+            }
+            2 => {
+                left = hitable[0].clone();
+                right = hitable[1].clone();
+            }
+            _ => {
+                let r = hitable.split_off(len / 2);
+                left = Box::new(BVHNode::new(hitable, time0, time1));
+                right = Box::new(BVHNode::new(r, time0, time1));
+            }
+
+        }
+
+        let bounding_box = match (left.bounding_box(time0, time1), right.bounding_box(time0, time1)) {
+            (Some(l_box), Some(r_box)) => {
+                surrounding_box(&l_box, &r_box)
+            }
+            _ => panic!("no bounding box found for either l or r")
+        };
+
+        BVHNode {
+            left: left,
+            right: right,
+            bounding_box,
+        }
+
+    }
+}
+
+impl Hittable for BVHNode {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        if self.bounding_box.hit(r, t_min, t_max) {
+            let hit_left = self.left.hit(r, t_min, t_max);
+            let hit_right = self.right.hit(r, t_min, t_max);
+            match (hit_left, hit_right) {
+                (Some(left_rec), Some(right_rec)) => {
+                    if left_rec.t < right_rec.t {
+                        Some(left_rec)
+                    } else {
+                        Some(right_rec)
+                    }
+                }
+                (Some(left_rec), None) => Some(left_rec),
+                (None, Some(right_rec)) => Some(right_rec),
+                (None, None) => None,
+            }
+        } else {
+            return None;
+        }
+    }
+
+    fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<AABB> {
+        Some(self.bounding_box)
+    }
+
+    fn box_clone(&self) -> Box<Hittable> {
+        Box::new((*self).clone())
     }
 }

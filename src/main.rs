@@ -6,26 +6,24 @@ extern crate rayon;
 
 use png::HasParameters;
 use std::fs::File;
-use std::sync::Arc;
 use std::env;
 use std::io::BufWriter;
 use rand::prelude::*;
 use rayon::prelude::*;
 
 use weekend_raytracer::vec3::{vec3, Ray, Vec3};
-use weekend_raytracer::geo::{Hittable, HittableList, Sphere, random_scene};
-use weekend_raytracer::material::{Dielectric, Lambertian, Metal};
+use weekend_raytracer::geo::{Hittable, random_scene, simple_spheres};
 use weekend_raytracer::camera::Camera;
 
 fn main() {
-    let mul = 5;
+    let mul = 4;
     let nx = mul * 200;
     let ny = mul * 100;
     let ns = 20;
 
     let mut img = vec![0u8; (nx * ny * 3) as usize];
 
-    let look_from = vec3(13, 2, 3);
+    let look_from = vec3(13, 4, 5);
     let look_at = vec3(0, 0, 0);
     let dist_to_focus = 10.0;
     let aperture = 0.1;
@@ -40,44 +38,9 @@ fn main() {
         0.0,
         1.0,
     );
-    // let world = HittableList {
-    //     list: vec![
-    //         Box::new(Sphere {
-    //             center: vec3(0.0, 0.0, -1.0),
-    //             radius: 0.5,
-    //             material: Arc::new(Lambertian {
-    //                 albedo: vec3(0.1, 0.2, 0.5),
-    //             }),
-    //         }),
-    //         Box::new(Sphere {
-    //             center: vec3(0.0, -100.5, -1.0),
-    //             radius: 100.0,
-    //             material: Arc::new(Lambertian {
-    //                 albedo: vec3(0.8, 0.8, 0.0),
-    //             }),
-    //         }),
-    //         Box::new(Sphere {
-    //             center: vec3(1.0, 0.0, -1.0),
-    //             radius: 0.5,
-    //             material: Arc::new(Metal {
-    //                 fuzz: 0.0,
-    //                 albedo: vec3(0.8, 0.6, 0.2),
-    //             }),
-    //         }),
-    //         Box::new(Sphere {
-    //             center: vec3(-1.0, 0.0, -1.0),
-    //             radius: 0.5,
-    //             material: Arc::new(Dielectric { ref_idx: 1.5 }),
-    //         }),
-    //         Box::new(Sphere {
-    //             center: vec3(-1.0, 0.0, -1.0),
-    //             radius: -0.45,
-    //             material: Arc::new(Dielectric { ref_idx: 1.5 }),
-    //         }),
-    //     ],
-    // };
 
-    let world = random_scene();
+    // let world = random_scene();
+    let world = simple_spheres();
     img.par_chunks_mut((nx * 3) as usize)
         .rev()
         .enumerate()
