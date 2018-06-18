@@ -1,9 +1,9 @@
 use bvh::{surrounding_box, AABB};
-use material::{Dielectric, Lambertian, Material, Metal};
+use material::{Material};
 use rand::prelude::*;
 use std::cmp::Ordering;
-use std::fmt::Debug;
 use std::sync::Arc;
+use std::fmt::Debug;
 use vec3::{vec3, Ray, Vec3};
 
 #[derive(Clone)]
@@ -241,195 +241,6 @@ impl Hittable for HittableList {
     }
 }
 
-pub fn random_scene() -> HittableList {
-    let mut list: Vec<Box<Hittable>> = vec![Box::new(Sphere {
-        center: vec3(0, -1000, 0),
-        radius: 1000.0,
-        material: Arc::new(Lambertian {
-            albedo: vec3(0.5, 0.5, 0.5),
-        }),
-    })];
-
-    let mut rng = thread_rng();
-    for a in -10..10 {
-        for b in -10..10 {
-            let choose_mat: f64 = rng.gen();
-            let v1: f64 = rng.gen();
-            let v2: f64 = rng.gen();
-            let center = vec3(a as f64 + 0.9 * v1, 0.2, b as f64 + 0.9 * v2);
-
-            if (center - vec3(4.0, 0.2, 0.0)).length() > 0.9 {
-                match choose_mat {
-                    x if x < 0.8 => {
-                        //diffuse
-                        let v3: f64 = rng.gen();
-                        let a1: f64 = rng.gen();
-                        let a2: f64 = rng.gen();
-                        let a3: f64 = rng.gen();
-                        list.push(Box::new(MovingSphere::new(
-                            center,
-                            center + vec3(0.0, 0.5 * v3, 0.0),
-                            0.0,
-                            1.0,
-                            0.2,
-                            Arc::new(Lambertian {
-                                albedo: vec3(a1, a2, a3),
-                            }),
-                        )));
-                    }
-
-                    x if x < 0.95 => {
-                        // metal
-                        let a1: f64 = rng.gen();
-                        let a2: f64 = rng.gen();
-                        let a3: f64 = rng.gen();
-                        let a4: f64 = rng.gen();
-                        list.push(Box::new(Sphere::new(
-                            center,
-                            0.2,
-                            Arc::new(Metal {
-                                albedo: vec3(0.5 * 1.0 + a1, 0.5 * 1.0 + a2, 0.5 * 1.0 + a3),
-                                fuzz: 0.5 * 1.0 + a4,
-                            }),
-                        )));
-                    }
-
-                    _ => {
-                        // glass
-                        list.push(Box::new(Sphere::new(
-                            center,
-                            0.2,
-                            Arc::new(Dielectric { ref_idx: 1.5 }),
-                        )));
-                    }
-                }
-            }
-        }
-    }
-
-    list.append(&mut vec![
-        Box::new(Sphere {
-            center: vec3(0, 1, 0),
-            radius: 1.0,
-            material: Arc::new(Dielectric { ref_idx: 1.5 }),
-        }),
-        Box::new(Sphere {
-            center: vec3(-4, 1, 0),
-            radius: 1.0,
-            material: Arc::new(Lambertian {
-                albedo: vec3(0.4, 0.2, 0.1),
-            }),
-        }),
-        Box::new(Sphere {
-            center: vec3(4, 1, 0),
-            radius: 1.0,
-            material: Arc::new(Metal {
-                fuzz: 0.0,
-                albedo: vec3(0.8, 0.6, 0.2),
-            }),
-        }),
-    ]);
-
-    HittableList { list }
-}
-
-pub fn simple_spheres() -> HittableList {
-    HittableList {
-        list: vec![
-            Box::new(Sphere {
-                center: vec3(0, -1000, 0),
-                radius: 1000.0,
-                material: Arc::new(Lambertian {
-                    albedo: vec3(0.8, 0.8, 0.0),
-                }),
-            }),
-            Box::new(Sphere {
-                center: vec3(4, 1, 0),
-                radius: 1.0,
-                material: Arc::new(Lambertian {
-                    albedo: vec3(0.1, 0.2, 0.5),
-                }),
-            }),
-            Box::new(Sphere {
-                center: vec3(-4, 1, 0),
-                radius: 1.0,
-                material: Arc::new(Metal {
-                    fuzz: 0.0,
-                    albedo: vec3(0.8, 0.6, 0.2),
-                }),
-            }),
-            Box::new(Sphere {
-                center: vec3(0, 1, 0),
-                radius: 1.0,
-                material: Arc::new(Dielectric { ref_idx: 1.5 }),
-            }),
-            Box::new(Sphere {
-                center: vec3(0, 1, 0),
-                radius: -0.95,
-                material: Arc::new(Dielectric { ref_idx: 1.5 }),
-            }),
-            // Box::new(Sphere {
-            //     center: vec3(0, 1, 0),
-            //     radius: 1.0,
-            //     material: Arc::new(Dielectric { ref_idx: 1.5 }),
-            // }),
-            // Box::new(Sphere {
-            //     center: vec3(-4, 1, 0),
-            //     radius: 1.0,
-            //     material: Arc::new(Lambertian {
-            //         albedo: vec3(0.4, 0.2, 0.1),
-            //     }),
-            // }),
-            // Box::new(Sphere {
-            //     center: vec3(4, 1, 0),
-            //     radius: 1.0,
-            //     material: Arc::new(Metal {
-            //         fuzz: 0.0,
-            //         albedo: vec3(0.8, 0.6, 0.2),
-            //     }),
-            // }),
-        ],
-    }
-}
-
-pub fn sphere_tree() -> BVHNode {
-    let v: Vec<Box<Hittable>> = vec![
-        Box::new(Sphere {
-            center: vec3(0, -1000, 0),
-            radius: 1000.0,
-            material: Arc::new(Lambertian {
-                albedo: vec3(0.8, 0.8, 0.0),
-            }),
-        }),
-        Box::new(Sphere {
-            center: vec3(4, 1, 0),
-            radius: 1.0,
-            material: Arc::new(Lambertian {
-                albedo: vec3(0.1, 0.2, 0.5),
-            }),
-        }),
-        Box::new(Sphere {
-            center: vec3(-4, 1, 0),
-            radius: 1.0,
-            material: Arc::new(Metal {
-                fuzz: 0.0,
-                albedo: vec3(0.8, 0.6, 0.2),
-            }),
-        }),
-        Box::new(Sphere {
-            center: vec3(0, 1, 0),
-            radius: 1.0,
-            material: Arc::new(Dielectric { ref_idx: 1.5 }),
-        }),
-        Box::new(Sphere {
-            center: vec3(0, 1, 0),
-            radius: -0.95,
-            material: Arc::new(Dielectric { ref_idx: 1.5 }),
-        }),
-    ];
-
-    BVHNode::new(v, 0.0, 1.0)
-}
 
 pub fn box_x_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
@@ -447,7 +258,7 @@ pub fn box_x_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
 pub enum Axis {
     X,
     Y,
-    Z,
+    Z
 }
 
 pub fn box_y_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
@@ -476,10 +287,22 @@ pub fn box_z_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     }
 }
 
-pub enum Axis {
-    X,
-    Y,
-    Z,
+pub fn box_compare(a: &Box<Hittable>, b: &Box<Hittable>, axis: Axis) -> Ordering {
+    match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
+        (Some(l), Some(r)) => {
+            let result = match axis {
+                Axis::X => l.min().x() - r.min().x(),
+                Axis::Y => l.min().y() - r.min().y(),
+                Axis::Z => l.min().z() - r.min().z()
+            };
+            if result < 0.0 {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        _ => panic!("no bounding box found for either l or r"),
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -490,44 +313,21 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
-    pub fn new(
-        mut hitable: Vec<Box<Hittable>>,
-        time0: f64,
-        time1: f64,
-        axis_in: Option<Axis>,
-    ) -> BVHNode {
-        let axis = match axis_in {
-            Some(a) => a,
-            None => {
-                let mut rng = thread_rng();
-                match rng.gen_range(0, 2) {
-                    0 => Axis::X,
-                    1 => Axis::Y,
-                    2 => Axis::Z,
-                    _ => panic!("this should never happen"),
-                }
-            }
-        };
+    pub fn new(mut hitable: Vec<Box<Hittable>>, time0: f64, time1: f64) -> BVHNode {
+        let mut rng = thread_rng();
+        let axis = rng.gen_range(0, 2);
 
-        BVHNode::along_axis(hitable, time0, time1, axis)
-    }
-
-    pub fn along_axis(
-        mut hitable: Vec<Box<Hittable>>,
-        time0: f64,
-        time1: f64,
-        axis: Axis,
-    ) -> BVHNode {
         match axis {
-            Axis::X => {
+            0 => {
                 hitable.sort_by(box_x_compare);
             }
-            Axis::Y => {
+            1 => {
                 hitable.sort_by(box_y_compare);
             }
-            Axis::Z => {
+            2 => {
                 hitable.sort_by(box_z_compare);
             }
+            _ => panic!("this should never happen"),
         }
 
         let left: Box<Hittable>;
@@ -545,8 +345,8 @@ impl BVHNode {
             }
             _ => {
                 let r = hitable.split_off(len / 2);
-                left = Box::new(BVHNode::new(hitable, time0, time1, axis));
-                right = Box::new(BVHNode::new(r, time0, time1, axis));
+                left = Box::new(BVHNode::new(hitable, time0, time1));
+                right = Box::new(BVHNode::new(r, time0, time1));
             }
         }
 
@@ -600,15 +400,18 @@ impl Hittable for BVHNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use material::Lambertian;
     #[test]
     fn bvh_node_with_one_item() {
-        let v: Vec<Box<Hittable>> = vec![Box::new(Sphere {
-            center: vec3(0, 0, 0),
-            radius: 1.0,
-            material: Arc::new(Lambertian {
-                albedo: vec3(0.8, 0.8, 0.0),
+        let v: Vec<Box<Hittable>> = vec![
+            Box::new(Sphere {
+                center: vec3(0, 0, 0),
+                radius: 1.0,
+                material: Arc::new(Lambertian {
+                    albedo: vec3(0.8, 0.8, 0.0),
+                }),
             }),
-        })];
+        ];
 
         let n = BVHNode::new(v, 0.0, 1.0);
         let b = n.bounding_box(0.0, 1.0).unwrap();

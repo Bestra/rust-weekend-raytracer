@@ -12,7 +12,8 @@ use std::fs::File;
 use std::io::BufWriter;
 
 use weekend_raytracer::camera::Camera;
-use weekend_raytracer::geo::{random_scene, simple_spheres, sphere_tree, Hittable};
+use weekend_raytracer::geo::{Hittable};
+use weekend_raytracer::scene::{random_scene, simple_spheres, sphere_tree};
 use weekend_raytracer::vec3::{vec3, Ray, Vec3};
 
 fn main() {
