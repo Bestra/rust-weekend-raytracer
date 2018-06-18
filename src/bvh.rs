@@ -20,15 +20,18 @@ pub fn surrounding_box(box0: &AABB, box1: &AABB) -> AABB {
     let small = vec3(
         ffmin(box0.min().x(), box1.min().x()),
         ffmin(box0.min().y(), box1.min().y()),
-        ffmin(box0.min().z(), box1.min().z())
+        ffmin(box0.min().z(), box1.min().z()),
     );
     let big = vec3(
-        ffmax(box0.min().x(), box1.min().x()),
-        ffmax(box0.min().y(), box1.min().y()),
-        ffmax(box0.min().z(), box1.min().z())
+        ffmax(box0.max().x(), box1.max().x()),
+        ffmax(box0.max().y(), box1.max().y()),
+        ffmax(box0.max().z(), box1.max().z()),
     );
 
-    AABB { min: small, max: big }
+    AABB {
+        min: small,
+        max: big,
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
