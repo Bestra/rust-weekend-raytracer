@@ -1,4 +1,4 @@
-use vec3::{Vec3, Ray, vec3};
+use vec3::{vec3, Ray, Vec3};
 
 pub fn ffmin(a: f64, b: f64) -> f64 {
     if a < b {
@@ -53,11 +53,11 @@ impl AABB {
         for a in 0..3 {
             let t0 = ffmin(
                 self.min[a] - r.origin()[a] / r.direction()[a],
-                self.max[a] - r.origin()[a] / r.direction()[a]
+                self.max[a] - r.origin()[a] / r.direction()[a],
             );
             let t1 = ffmax(
                 self.min[a] - r.origin()[a] / r.direction()[a],
-                self.max[a] - r.origin()[a] / r.direction()[a]
+                self.max[a] - r.origin()[a] / r.direction()[a],
             );
 
             let tmin = ffmax(t0, tmin);

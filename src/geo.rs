@@ -2,8 +2,8 @@ use bvh::{surrounding_box, AABB};
 use material::{Dielectric, Lambertian, Material, Metal};
 use rand::prelude::*;
 use std::cmp::Ordering;
-use std::sync::Arc;
 use std::fmt::Debug;
+use std::sync::Arc;
 use vec3::{vec3, Ray, Vec3};
 
 #[derive(Clone)]
@@ -444,6 +444,12 @@ pub fn box_x_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     }
 }
 
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
 pub fn box_y_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
         (Some(l), Some(r)) => {
@@ -470,6 +476,12 @@ pub fn box_z_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     }
 }
 
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
 #[derive(Clone, Debug)]
 pub struct BVHNode {
     left: Box<Hittable>,
@@ -478,21 +490,44 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
-    pub fn new(mut hitable: Vec<Box<Hittable>>, time0: f64, time1: f64) -> BVHNode {
-        let mut rng = thread_rng();
-        let axis = rng.gen_range(0, 2);
+    pub fn new(
+        mut hitable: Vec<Box<Hittable>>,
+        time0: f64,
+        time1: f64,
+        axis_in: Option<Axis>,
+    ) -> BVHNode {
+        let axis = match axis_in {
+            Some(a) => a,
+            None => {
+                let mut rng = thread_rng();
+                match rng.gen_range(0, 2) {
+                    0 => Axis::X,
+                    1 => Axis::Y,
+                    2 => Axis::Z,
+                    _ => panic!("this should never happen"),
+                }
+            }
+        };
 
+        BVHNode::along_axis(hitable, time0, time1, axis)
+    }
+
+    pub fn along_axis(
+        mut hitable: Vec<Box<Hittable>>,
+        time0: f64,
+        time1: f64,
+        axis: Axis,
+    ) -> BVHNode {
         match axis {
-            0 => {
+            Axis::X => {
                 hitable.sort_by(box_x_compare);
             }
-            1 => {
+            Axis::Y => {
                 hitable.sort_by(box_y_compare);
             }
-            2 => {
+            Axis::Z => {
                 hitable.sort_by(box_z_compare);
             }
-            _ => panic!("this should never happen"),
         }
 
         let left: Box<Hittable>;
@@ -510,8 +545,8 @@ impl BVHNode {
             }
             _ => {
                 let r = hitable.split_off(len / 2);
-                left = Box::new(BVHNode::new(hitable, time0, time1));
-                right = Box::new(BVHNode::new(r, time0, time1));
+                left = Box::new(BVHNode::new(hitable, time0, time1, axis));
+                right = Box::new(BVHNode::new(r, time0, time1, axis));
             }
         }
 
@@ -559,5 +594,26 @@ impl Hittable for BVHNode {
 
     fn box_clone(&self) -> Box<Hittable> {
         Box::new((*self).clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn bvh_node_with_one_item() {
+        let v: Vec<Box<Hittable>> = vec![Box::new(Sphere {
+            center: vec3(0, 0, 0),
+            radius: 1.0,
+            material: Arc::new(Lambertian {
+                albedo: vec3(0.8, 0.8, 0.0),
+            }),
+        })];
+
+        let n = BVHNode::new(v, 0.0, 1.0);
+        let b = n.bounding_box(0.0, 1.0).unwrap();
+        println!("{:?}", b);
+
+        assert_eq!(b.max(), Vec3::new([1.0, 1.0, 1.0]));
     }
 }

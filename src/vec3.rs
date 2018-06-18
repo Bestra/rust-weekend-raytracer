@@ -1,8 +1,8 @@
-use std::ops::Index;
 use rand::prelude::*;
+use std::ops::Index;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
     e: [f64; 3],
 }
@@ -221,12 +221,12 @@ impl Neg for Vec3 {
 pub struct Ray {
     a: Vec3,
     b: Vec3,
-    time: f64
+    time: f64,
 }
 
 impl Ray {
     pub fn new(a: Vec3, b: Vec3, ti: f64) -> Ray {
-        Ray { a, b , time: ti }
+        Ray { a, b, time: ti }
     }
 
     pub fn origin(&self) -> Vec3 {

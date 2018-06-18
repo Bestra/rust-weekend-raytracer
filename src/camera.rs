@@ -1,6 +1,6 @@
 use rand::prelude::*;
-use vec3::{Ray, Vec3};
 use std::f64::consts::PI;
+use vec3::{Ray, Vec3};
 pub struct Camera {
     pub origin: Vec3,
     pub lower_left_corner: Vec3,
@@ -58,7 +58,7 @@ impl Camera {
         Ray::new(
             self.origin + offset,
             self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset,
-            time
+            time,
         )
     }
 }

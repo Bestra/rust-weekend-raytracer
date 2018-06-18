@@ -1,19 +1,19 @@
 extern crate core;
 extern crate png;
 extern crate rand;
-extern crate weekend_raytracer;
 extern crate rayon;
+extern crate weekend_raytracer;
 
 use png::HasParameters;
-use std::fs::File;
-use std::env;
-use std::io::BufWriter;
 use rand::prelude::*;
 use rayon::prelude::*;
+use std::env;
+use std::fs::File;
+use std::io::BufWriter;
 
-use weekend_raytracer::vec3::{vec3, Ray, Vec3};
-use weekend_raytracer::geo::{Hittable, random_scene, simple_spheres, sphere_tree};
 use weekend_raytracer::camera::Camera;
+use weekend_raytracer::geo::{random_scene, simple_spheres, sphere_tree, Hittable};
+use weekend_raytracer::vec3::{vec3, Ray, Vec3};
 
 fn main() {
     let mul = 4;
@@ -42,7 +42,6 @@ fn main() {
     // let world = random_scene();
     // let world = simple_spheres();
     let world = sphere_tree();
-    println!("{:#?}", world);
     img.par_chunks_mut((nx * 3) as usize)
         .rev()
         .enumerate()

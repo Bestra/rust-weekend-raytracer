@@ -1,7 +1,7 @@
-use std::fmt::Debug;
-use vec3::{Ray, Vec3, reflect, refract, dot};
 use geo::HitRecord;
 use rand::prelude::*;
+use std::fmt::Debug;
+use vec3::{dot, reflect, refract, Ray, Vec3};
 
 pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
     let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
@@ -13,7 +13,7 @@ pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
 pub struct MaterialReflection {
     pub scattered: Ray,
     pub attenuation: Vec3,
-    pub hit: bool
+    pub hit: bool,
 }
 
 pub trait Material: Sync + Send + Debug {
@@ -29,7 +29,11 @@ impl Material for Lambertian {
     fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection> {
         let target = rec.p + rec.normal + Vec3::random_in_unit_sphere();
         let scattered = Ray::new(rec.p, target - rec.p, r_in.time());
-        Some(MaterialReflection { scattered, attenuation: self.albedo, hit: true })
+        Some(MaterialReflection {
+            scattered,
+            attenuation: self.albedo,
+            hit: true,
+        })
     }
 }
 
@@ -42,9 +46,17 @@ pub struct Metal {
 impl Material for Metal {
     fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection> {
         let reflected = reflect(r_in.direction().unit_vector(), rec.normal);
-        let scattered = Ray::new(rec.p, reflected + self.fuzz * Vec3::random_in_unit_sphere(), r_in.time());
+        let scattered = Ray::new(
+            rec.p,
+            reflected + self.fuzz * Vec3::random_in_unit_sphere(),
+            r_in.time(),
+        );
         if dot(scattered.direction(), rec.normal) > 0.0 {
-            Some(MaterialReflection { scattered: scattered.clone(), attenuation: self.albedo, hit: true })
+            Some(MaterialReflection {
+                scattered: scattered.clone(),
+                attenuation: self.albedo,
+                hit: true,
+            })
         } else {
             None
         }
@@ -66,16 +78,14 @@ impl Material for Dielectric {
             let cos = rdotn / r_in.direction().length();
             let cos = (1.0 - self.ref_idx * self.ref_idx * (1.0 - cos - cos)).sqrt();
             (-rec.normal, self.ref_idx, cos)
-
         } else {
             let cos = -rdotn / r_in.direction().length();
             (rec.normal, 1.0 / self.ref_idx, cos)
         };
 
-        let (reflect_prob, refracted) = match refract(r_in.direction(), outward_normal, ni_over_nt) {
-            Some(refracted_val) => {
-                (schlick(cosine, self.ref_idx), refracted_val)
-            }
+        let (reflect_prob, refracted) = match refract(r_in.direction(), outward_normal, ni_over_nt)
+        {
+            Some(refracted_val) => (schlick(cosine, self.ref_idx), refracted_val),
             None => {
                 (1.0, Vec3::random_in_unit_sphere()) // the refracted value is meaningless here
             }
@@ -90,7 +100,10 @@ impl Material for Dielectric {
             Ray::new(rec.p, refracted, r_in.time())
         };
 
-        Some(MaterialReflection { scattered: scattered.clone(), attenuation: attenuation, hit: true })
-
+        Some(MaterialReflection {
+            scattered: scattered.clone(),
+            attenuation: attenuation,
+            hit: true,
+        })
     }
 }
