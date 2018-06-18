@@ -12,14 +12,14 @@ use rand::prelude::*;
 use rayon::prelude::*;
 
 use weekend_raytracer::vec3::{vec3, Ray, Vec3};
-use weekend_raytracer::geo::{Hittable, random_scene, simple_spheres};
+use weekend_raytracer::geo::{Hittable, random_scene, simple_spheres, sphere_tree};
 use weekend_raytracer::camera::Camera;
 
 fn main() {
     let mul = 4;
     let nx = mul * 200;
     let ny = mul * 100;
-    let ns = 20;
+    let ns = 10;
 
     let mut img = vec![0u8; (nx * ny * 3) as usize];
 
@@ -40,7 +40,9 @@ fn main() {
     );
 
     // let world = random_scene();
-    let world = simple_spheres();
+    // let world = simple_spheres();
+    let world = sphere_tree();
+    println!("{:#?}", world);
     img.par_chunks_mut((nx * 3) as usize)
         .rev()
         .enumerate()

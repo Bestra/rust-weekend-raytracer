@@ -31,7 +31,7 @@ pub fn surrounding_box(box0: &AABB, box1: &AABB) -> AABB {
     AABB { min: small, max: big }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct AABB {
     pub min: Vec3,
     pub max: Vec3,

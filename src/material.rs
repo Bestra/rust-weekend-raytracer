@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use vec3::{Ray, Vec3, reflect, refract, dot};
 use geo::HitRecord;
 use rand::prelude::*;
@@ -8,16 +9,18 @@ pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
     r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
 }
 
+#[derive(Debug)]
 pub struct MaterialReflection {
     pub scattered: Ray,
     pub attenuation: Vec3,
     pub hit: bool
 }
 
-pub trait Material: Sync + Send {
+pub trait Material: Sync + Send + Debug {
     fn scatter(&self, r_in: Ray, rec: HitRecord) -> Option<MaterialReflection>;
 }
 
+#[derive(Debug)]
 pub struct Lambertian {
     pub albedo: Vec3,
 }
@@ -30,6 +33,7 @@ impl Material for Lambertian {
     }
 }
 
+#[derive(Debug)]
 pub struct Metal {
     pub albedo: Vec3,
     pub fuzz: f64,
@@ -47,6 +51,7 @@ impl Material for Metal {
     }
 }
 
+#[derive(Debug)]
 pub struct Dielectric {
     pub ref_idx: f64,
 }
