@@ -1,11 +1,10 @@
+//!
+//! Contains helpers for constructing scenes out of geometry primitives
+use geo::{BVHNode, Hittable, HittableList, MovingSphere, Sphere};
 use material::{Dielectric, Lambertian, Metal};
 use rand::prelude::*;
 use std::sync::Arc;
-use vec3::{vec3};
-use geo::{BVHNode, HittableList, Hittable, Sphere, MovingSphere};
-
-///
-/// Contains helpers for constructing scenes out of geometry primitives
+use vec3::vec3;
 
 pub fn random_scene() -> HittableList {
     let mut list: Vec<Box<Hittable>> = vec![Box::new(Sphere {
@@ -194,5 +193,5 @@ pub fn sphere_tree() -> BVHNode {
         }),
     ];
 
-    BVHNode::new(v, 0.0, 1.0)
+    BVHNode::new(v, 0.0, 1.0, &None)
 }

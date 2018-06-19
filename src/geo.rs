@@ -1,9 +1,9 @@
 use bvh::{surrounding_box, AABB};
-use material::{Material};
+use material::Material;
 use rand::prelude::*;
 use std::cmp::Ordering;
-use std::sync::Arc;
 use std::fmt::Debug;
+use std::sync::Arc;
 use vec3::{vec3, Ray, Vec3};
 
 #[derive(Clone)]
@@ -241,7 +241,6 @@ impl Hittable for HittableList {
     }
 }
 
-
 pub fn box_x_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
         (Some(l), Some(r)) => {
@@ -253,12 +252,6 @@ pub fn box_x_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
         }
         _ => panic!("no bounding box found for either l or r"),
     }
-}
-
-pub enum Axis {
-    X,
-    Y,
-    Z
 }
 
 pub fn box_y_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
@@ -287,13 +280,19 @@ pub fn box_z_compare(a: &Box<Hittable>, b: &Box<Hittable>) -> Ordering {
     }
 }
 
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
 pub fn box_compare(a: &Box<Hittable>, b: &Box<Hittable>, axis: Axis) -> Ordering {
     match (a.bounding_box(0.0, 0.0), b.bounding_box(0.0, 0.0)) {
         (Some(l), Some(r)) => {
             let result = match axis {
                 Axis::X => l.min().x() - r.min().x(),
                 Axis::Y => l.min().y() - r.min().y(),
-                Axis::Z => l.min().z() - r.min().z()
+                Axis::Z => l.min().z() - r.min().z(),
             };
             if result < 0.0 {
                 Ordering::Less
@@ -313,22 +312,32 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
-    pub fn new(mut hitable: Vec<Box<Hittable>>, time0: f64, time1: f64) -> BVHNode {
-        let mut rng = thread_rng();
-        let axis = rng.gen_range(0, 2);
-
-        match axis {
-            0 => {
-                hitable.sort_by(box_x_compare);
+    pub fn new(
+        mut hitable: Vec<Box<Hittable>>,
+        time0: f64,
+        time1: f64,
+        force_axis: &Option<Axis>,
+    ) -> BVHNode {
+        match force_axis {
+            Some(Axis::X) => hitable.sort_by(box_x_compare),
+            Some(Axis::Y) => hitable.sort_by(box_y_compare),
+            Some(Axis::Z) => hitable.sort_by(box_z_compare),
+            None => {
+                let mut rng = thread_rng();
+                match rng.gen_range(0, 2) {
+                    0 => {
+                        hitable.sort_by(box_x_compare);
+                    }
+                    1 => {
+                        hitable.sort_by(box_y_compare);
+                    }
+                    2 => {
+                        hitable.sort_by(box_z_compare);
+                    }
+                    _ => panic!("this should never happen"),
+                }
             }
-            1 => {
-                hitable.sort_by(box_y_compare);
-            }
-            2 => {
-                hitable.sort_by(box_z_compare);
-            }
-            _ => panic!("this should never happen"),
-        }
+        };
 
         let left: Box<Hittable>;
         let right: Box<Hittable>;
@@ -345,8 +354,8 @@ impl BVHNode {
             }
             _ => {
                 let r = hitable.split_off(len / 2);
-                left = Box::new(BVHNode::new(hitable, time0, time1));
-                right = Box::new(BVHNode::new(r, time0, time1));
+                left = Box::new(BVHNode::new(hitable, time0, time1, force_axis));
+                right = Box::new(BVHNode::new(r, time0, time1, force_axis));
             }
         }
 
@@ -403,17 +412,15 @@ mod tests {
     use material::Lambertian;
     #[test]
     fn bvh_node_with_one_item() {
-        let v: Vec<Box<Hittable>> = vec![
-            Box::new(Sphere {
-                center: vec3(0, 0, 0),
-                radius: 1.0,
-                material: Arc::new(Lambertian {
-                    albedo: vec3(0.8, 0.8, 0.0),
-                }),
+        let v: Vec<Box<Hittable>> = vec![Box::new(Sphere {
+            center: vec3(0, 0, 0),
+            radius: 1.0,
+            material: Arc::new(Lambertian {
+                albedo: vec3(0.8, 0.8, 0.0),
             }),
-        ];
+        })];
 
-        let n = BVHNode::new(v, 0.0, 1.0);
+        let n = BVHNode::new(v, 0.0, 1.0, &None);
         let b = n.bounding_box(0.0, 1.0).unwrap();
         println!("{:?}", b);
 
